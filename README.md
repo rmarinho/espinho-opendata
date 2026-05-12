@@ -25,9 +25,10 @@ npm run validate:update
 | Variável | Tipo | Valor recomendado | Efeito |
 |---|---|---|---|
 | `USE_MOCK_DATA` | env/repo variable | `false` em produção | `true` usa snippets mock; `false` faz recolha real de fontes públicas |
-| `AI_PROVIDER` | env/repo variable | `openai` | ativa fornecedor LLM suportado |
-| `OPENAI_MODEL` | env/repo variable | `gpt-4.1-mini` (ou outro) | modelo para sumarização opcional |
-| `OPENAI_API_KEY` | secret | definido | chave da API OpenAI |
+| `AI_PROVIDER` | env/repo variable | `github-models` | fornecedor LLM (`github-models` por defeito, `openai` como alternativa) |
+| `GITHUB_MODELS_MODEL` | env/repo variable | `openai/gpt-4.1-mini` | modelo para GitHub Models |
+| `OPENAI_MODEL` | env/repo variable | `gpt-4.1-mini` | modelo alternativo (só se `AI_PROVIDER=openai`) |
+| `OPENAI_API_KEY` | secret | — | chave da API OpenAI (só se `AI_PROVIDER=openai`) |
 
 ## Configuração exata do repositório (após merge)
 
@@ -35,14 +36,19 @@ npm run validate:update
    - Source: **GitHub Actions**
 2. **Settings → Actions → General**
    - Workflow permissions: **Read and write permissions**
+   - O workflow inclui `models: read` para acesso ao GitHub Models.
 3. **Settings → Secrets and variables → Actions**
-   - Secret: `OPENAI_API_KEY`
    - Variables:
      - `USE_MOCK_DATA=false`
-     - `AI_PROVIDER=openai`
-     - `OPENAI_MODEL=gpt-4.1-mini` (ou modelo escolhido)
+     - `AI_PROVIDER=github-models`
+     - `GITHUB_MODELS_MODEL=openai/gpt-4.1-mini` (ou modelo escolhido)
+   - *(Opcional, apenas se usar `AI_PROVIDER=openai`):*
+     - Secret: `OPENAI_API_KEY`
+     - Variable: `OPENAI_MODEL=gpt-4.1-mini`
 
-> Nota: o workflow “Update Espinho Updates Site” aparece normalmente após o ficheiro de workflow existir no **default branch**.
+> Nota: A disponibilidade e limites do GitHub Models dependem do plano da conta/organização e do acesso ao GitHub Models.
+
+> Nota: o workflow "Update Espinho Updates Site" aparece normalmente após o ficheiro de workflow existir no **default branch**.
 
 ### Execução manual do workflow
 

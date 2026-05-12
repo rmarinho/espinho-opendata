@@ -16,7 +16,9 @@ const PORTUGUESE_MONTHS = ['jan', 'fev', 'mar', 'abr', 'mai', 'jun', 'jul', 'ago
 export function getRuntimeConfig(env = process.env) {
   return {
     useMockData: (env.USE_MOCK_DATA ?? 'true').toLowerCase() !== 'false',
-    aiProvider: (env.AI_PROVIDER ?? 'openai').toLowerCase(),
+    aiProvider: (env.AI_PROVIDER ?? 'github-models').toLowerCase(),
+    githubToken: env.GITHUB_TOKEN ?? env.GH_MODELS_TOKEN,
+    githubModelsModel: env.GITHUB_MODELS_MODEL ?? 'openai/gpt-4.1-mini',
     openAiApiKey: env.OPENAI_API_KEY,
     openAiModel: env.OPENAI_MODEL ?? 'gpt-4.1-mini'
   };
@@ -433,7 +435,7 @@ export function normalizeAiOutput(data, checkedSources, fallbackSnippets, catalo
 }
 
 export async function generateWithOpenAI(input, { apiKey, model, fetchFn = fetch } = {}) {
-  const prompt = `És um assistente editorial local para Espinho, Portugal.\n\nContexto e restrições:\n- Usar APENAS a informação fornecida em snippets de fontes públicas verificáveis.\n- Ignorar rumores, posts sem validação, spam promocional e notícias nacionais sem ligação clara a Espinho.\n- Deduplicar histórias repetidas.\n- Escrever em português (PT), tom adequado a grupo local de Facebook.\n- Texto conciso, com abertura amigável e pergunta final para engagement.\n- Citar links de fontes.\n- Evitar qualquer afirmação não suportada pelos snippets.\n\nIMPORTANTE DE CUSTO/PREVISIBILIDADE:\n- Priorizar uma saída curta e direta.\n- Se não houver dados relevantes, devolver updates=[] e noSignificantUpdates=true.\n\nResponder APENAS em JSON estrito com este schema:\n{\n  "date": "YYYY-MM-DD",\n  "generatedAt": "ISO_DATETIME",\n  "title": "string",\n  "facebookDraft": "string",\n  "updates": [\n    {\n      "topic": "string",\n      "text": "string",\n      "dateTime": "ISO_DATETIME",\n      "location": "string",\n      "sources": ["https://..."]\n    }\n  ],\n  "sources": [\n    {\n      "title": "string",\n      "url": "https://...",\n      "publisher": "string"\n    }\n  ],\n  "checkedSources": ["https://..."],\n  "noSignificantUpdates": true\n}\n\nInput JSON:\n${JSON.stringify(input)}`;
+  const prompt = buildLlmPrompt(input);
 
   const response = await fetchFn('https://api.openai.com/v1/chat/completions', {
     method: 'POST',
@@ -457,11 +459,47 @@ export async function generateWithOpenAI(input, { apiKey, model, fetchFn = fetch
   const text = payload?.choices?.[0]?.message?.content;
   if (!text) throw new Error('Missing completion content from OpenAI response');
 
+  return parseLlmJsonOutput(text);
+}
+
+export async function generateWithGitHubModels(input, { token, model, fetchFn = fetch } = {}) {
+  const prompt = buildLlmPrompt(input);
+
+  const response = await fetchFn('https://models.github.ai/inference/chat/completions', {
+    method: 'POST',
+    headers: {
+      Authorization: `Bearer ${token}`,
+      'Content-Type': 'application/json'
+    },
+    body: JSON.stringify({
+      model,
+      messages: [{ role: 'user', content: prompt }],
+      max_tokens: 1200,
+      response_format: { type: 'json_object' }
+    })
+  });
+
+  if (!response.ok) {
+    throw new Error(`GitHub Models request failed with ${response.status}`);
+  }
+
+  const payload = await response.json();
+  const text = payload?.choices?.[0]?.message?.content;
+  if (!text) throw new Error('Missing completion content from GitHub Models response');
+
+  return parseLlmJsonOutput(text);
+}
+
+function buildLlmPrompt(input) {
+  return `És um assistente editorial local para Espinho, Portugal.\n\nContexto e restrições:\n- Usar APENAS a informação fornecida em snippets de fontes públicas verificáveis.\n- Ignorar rumores, posts sem validação, spam promocional e notícias nacionais sem ligação clara a Espinho.\n- Deduplicar histórias repetidas.\n- Escrever em português (PT), tom adequado a grupo local de Facebook.\n- Texto conciso, com abertura amigável e pergunta final para engagement.\n- Citar links de fontes.\n- Evitar qualquer afirmação não suportada pelos snippets.\n\nIMPORTANTE DE CUSTO/PREVISIBILIDADE:\n- Priorizar uma saída curta e direta.\n- Se não houver dados relevantes, devolver updates=[] e noSignificantUpdates=true.\n\nResponder APENAS em JSON estrito com este schema:\n{\n  "date": "YYYY-MM-DD",\n  "generatedAt": "ISO_DATETIME",\n  "title": "string",\n  "facebookDraft": "string",\n  "updates": [\n    {\n      "topic": "string",\n      "text": "string",\n      "dateTime": "ISO_DATETIME",\n      "location": "string",\n      "sources": ["https://..."]\n    }\n  ],\n  "sources": [\n    {\n      "title": "string",\n      "url": "https://...",\n      "publisher": "string"\n    }\n  ],\n  "checkedSources": ["https://..."],\n  "noSignificantUpdates": true\n}\n\nInput JSON:\n${JSON.stringify(input)}`;
+}
+
+function parseLlmJsonOutput(text) {
   try {
     return JSON.parse(text);
   } catch {
     const match = text.match(/\{[\s\S]*\}/);
-    if (!match) throw new Error('OpenAI output is not valid JSON');
+    if (!match) throw new Error('LLM output is not valid JSON');
     return JSON.parse(match[0]);
   }
 }
@@ -485,6 +523,7 @@ export async function generateUpdate({
   catalog = sourceCatalog,
   collectSnippetsFn = collectSnippets,
   generateWithOpenAIFn = generateWithOpenAI,
+  generateWithGitHubModelsFn = generateWithGitHubModels,
   now = new Date()
 } = {}) {
   const config = getRuntimeConfig(env);
@@ -501,9 +540,23 @@ export async function generateUpdate({
   const snippets = Array.isArray(collected.snippets) ? collected.snippets : [];
 
   let output;
-  const llmEnabled = config.aiProvider === 'openai' && config.openAiApiKey;
+  const githubModelsEnabled = config.aiProvider === 'github-models' && config.githubToken;
+  const openAiEnabled = config.aiProvider === 'openai' && config.openAiApiKey;
 
-  if (llmEnabled) {
+  if (githubModelsEnabled) {
+    try {
+      const aiOutput = await generateWithGitHubModelsFn(
+        { snippets, checkedSources },
+        {
+          token: config.githubToken,
+          model: config.githubModelsModel
+        }
+      );
+      output = normalizeAiOutput(aiOutput, checkedSources, snippets, catalog);
+    } catch {
+      output = buildFallbackUpdate({ snippets, checkedSources, now, catalog });
+    }
+  } else if (openAiEnabled) {
     try {
       const aiOutput = await generateWithOpenAIFn(
         { snippets, checkedSources },

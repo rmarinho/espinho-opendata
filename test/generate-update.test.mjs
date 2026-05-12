@@ -3,7 +3,7 @@ import assert from 'node:assert/strict';
 import { mkdir, mkdtemp, readFile, writeFile } from 'node:fs/promises';
 import os from 'node:os';
 import path from 'node:path';
-import { generateUpdate, normalizeAiOutput, buildFallbackUpdate } from '../scripts/generate-update.mjs';
+import { generateUpdate, normalizeAiOutput, buildFallbackUpdate, generateWithGitHubModels } from '../scripts/generate-update.mjs';
 
 const SOURCE_URL = 'https://www.visit.espinho.pt/pt/eventos/';
 const IPMA_URL = 'https://api.ipma.pt/open-data/forecast/warnings/warnings_www.json';
@@ -222,4 +222,116 @@ test('normalizeAiOutput forces noSignificantUpdates based on final updates array
   };
   const withoutUpdates = normalizeAiOutput(emptyAiData, [SOURCE_URL], [], testCatalog);
   assert.equal(withoutUpdates.noSignificantUpdates, true);
+});
+
+// --- GitHub Models provider tests ---
+
+test('generateWithGitHubModels uses correct endpoint and auth header', async () => {
+  let capturedUrl;
+  let capturedHeaders;
+  let capturedBody;
+
+  const fakeFetch = async (url, options) => {
+    capturedUrl = url;
+    capturedHeaders = options.headers;
+    capturedBody = JSON.parse(options.body);
+    return {
+      ok: true,
+      json: async () => ({
+        choices: [
+          {
+            message: {
+              content: JSON.stringify({
+                date: '2026-05-12',
+                generatedAt: '2026-05-12T20:00:00.000Z',
+                title: 'Teste',
+                facebookDraft: 'Rascunho.',
+                updates: [],
+                sources: [],
+                checkedSources: [SOURCE_URL],
+                noSignificantUpdates: true
+              })
+            }
+          }
+        ]
+      })
+    };
+  };
+
+  await generateWithGitHubModels(
+    { snippets: [], checkedSources: [SOURCE_URL] },
+    { token: 'test-github-token', model: 'openai/gpt-4.1-mini', fetchFn: fakeFetch }
+  );
+
+  assert.equal(capturedUrl, 'https://models.github.ai/inference/chat/completions');
+  assert.equal(capturedHeaders.Authorization, 'Bearer test-github-token');
+  assert.equal(capturedHeaders['Content-Type'], 'application/json');
+  assert.equal(capturedBody.model, 'openai/gpt-4.1-mini');
+  assert.deepEqual(capturedBody.response_format, { type: 'json_object' });
+  assert.ok(capturedBody.messages.length > 0);
+});
+
+test('generateWithGitHubModels parses JSON output correctly', async () => {
+  const expectedOutput = {
+    date: '2026-05-12',
+    generatedAt: '2026-05-12T20:00:00.000Z',
+    title: 'Teste',
+    facebookDraft: 'Rascunho.',
+    updates: [
+      { topic: 'Evento', text: 'Feira.', dateTime: '2026-05-12T20:00:00.000Z', location: 'Espinho', sources: [SOURCE_URL] }
+    ],
+    sources: [{ title: 'Visit Espinho', url: SOURCE_URL, publisher: 'Turismo' }],
+    checkedSources: [SOURCE_URL],
+    noSignificantUpdates: false
+  };
+
+  const fakeFetch = async () => ({
+    ok: true,
+    json: async () => ({ choices: [{ message: { content: JSON.stringify(expectedOutput) } }] })
+  });
+
+  const result = await generateWithGitHubModels(
+    { snippets: [], checkedSources: [SOURCE_URL] },
+    { token: 'tok', model: 'openai/gpt-4.1-mini', fetchFn: fakeFetch }
+  );
+
+  assert.equal(result.date, '2026-05-12');
+  assert.equal(result.updates.length, 1);
+  assert.equal(result.updates[0].topic, 'Evento');
+});
+
+test('generateWithGitHubModels throws on API failure', async () => {
+  const fakeFetch = async () => ({ ok: false, status: 500 });
+
+  await assert.rejects(
+    () => generateWithGitHubModels({ snippets: [], checkedSources: [] }, { token: 'tok', model: 'm', fetchFn: fakeFetch }),
+    { message: /GitHub Models request failed with 500/ }
+  );
+});
+
+test('generateUpdate falls back safely when GitHub Models API fails', async () => {
+  const rootDir = await mkdtemp(path.join(os.tmpdir(), 'espinho-ghmodels-fallback-'));
+
+  const failingGitHubModelsFn = async () => {
+    throw new Error('API down');
+  };
+
+  const output = await generateUpdate({
+    rootDir,
+    env: {
+      USE_MOCK_DATA: 'false',
+      AI_PROVIDER: 'github-models',
+      GITHUB_TOKEN: 'test-token'
+    },
+    collectSnippetsFn: async () => ({
+      snippets: [{ topic: 'Evento', text: 'Feira local.', location: 'Espinho', sourceUrl: SOURCE_URL }],
+      checkedSources: [SOURCE_URL]
+    }),
+    generateWithGitHubModelsFn: failingGitHubModelsFn,
+    now: new Date('2026-05-12T20:00:00.000Z')
+  });
+
+  assert.equal(output.updates.length, 1);
+  assert.equal(output.noSignificantUpdates, false);
+  assert.match(output.facebookDraft, /Rascunho gerado por IA/);
 });

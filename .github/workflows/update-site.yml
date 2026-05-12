@@ -9,6 +9,7 @@ permissions:
   contents: write
   pages: write
   id-token: write
+  models: read
 
 concurrency:
   group: "pages"
@@ -31,10 +32,12 @@ jobs:
 
       - name: Generate daily update JSON
         env:
-          AI_PROVIDER: ${{ vars.AI_PROVIDER }}
-          OPENAI_MODEL: ${{ vars.OPENAI_MODEL }}
-          OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
+          AI_PROVIDER: ${{ vars.AI_PROVIDER != '' && vars.AI_PROVIDER || 'github-models' }}
+          GITHUB_MODELS_MODEL: ${{ vars.GITHUB_MODELS_MODEL != '' && vars.GITHUB_MODELS_MODEL || 'openai/gpt-4.1-mini' }}
+          GITHUB_TOKEN: ${{ github.token }}
           USE_MOCK_DATA: ${{ vars.USE_MOCK_DATA != '' && vars.USE_MOCK_DATA || 'false' }}
+          OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
+          OPENAI_MODEL: ${{ vars.OPENAI_MODEL }}
         run: npm run generate:update
 
       - name: Validate generated JSON schema
