@@ -1,3 +1,6 @@
+export const REQUIRED_ROOT_KEYS = ['date', 'generatedAt', 'title', 'facebookDraft', 'updates', 'sources', 'checkedSources', 'noSignificantUpdates'];
+export const MAX_UPDATES = 7;
+
 export function validateUpdateSchema(data) {
   const errors = [];
 
@@ -14,8 +17,7 @@ export function validateUpdateSchema(data) {
     return errors;
   }
 
-  const requiredRootKeys = ['date', 'generatedAt', 'title', 'facebookDraft', 'updates', 'sources', 'checkedSources', 'noSignificantUpdates'];
-  for (const key of requiredRootKeys) {
+  for (const key of REQUIRED_ROOT_KEYS) {
     if (!(key in data)) errors.push(`Missing root key: ${key}`);
   }
 
@@ -28,8 +30,8 @@ export function validateUpdateSchema(data) {
   if (!Array.isArray(data.updates)) {
     errors.push('updates must be an array.');
   } else {
-    if (data.updates.length > 7) {
-      errors.push('updates must have at most 7 entries.');
+    if (data.updates.length > MAX_UPDATES) {
+      errors.push(`updates must have at most ${MAX_UPDATES} entries.`);
     }
 
     for (const [index, item] of data.updates.entries()) {

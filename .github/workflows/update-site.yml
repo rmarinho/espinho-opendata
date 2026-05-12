@@ -31,7 +31,7 @@ jobs:
           AI_PROVIDER: ${{ vars.AI_PROVIDER }}
           OPENAI_MODEL: ${{ vars.OPENAI_MODEL }}
           OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
-          USE_MOCK_DATA: ${{ vars.USE_MOCK_DATA || 'false' }}
+          USE_MOCK_DATA: ${{ vars.USE_MOCK_DATA != '' && vars.USE_MOCK_DATA || 'false' }}
         run: npm run generate:update
 
       - name: Validate generated JSON schema

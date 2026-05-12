@@ -1,6 +1,7 @@
 import { mkdir, readFile, writeFile } from 'node:fs/promises';
+import { createHash } from 'node:crypto';
 import path from 'node:path';
-import { assertValidUpdateSchema } from './update-schema.mjs';
+import { MAX_UPDATES, assertValidUpdateSchema } from './update-schema.mjs';
 
 const ROOT = process.cwd();
 const PUBLIC_DIR = path.join(ROOT, 'public');
@@ -14,7 +15,6 @@ const OPENAI_MODEL = process.env.OPENAI_MODEL ?? 'gpt-4.1-mini';
 const MIN_TEXT_BLOCK_LENGTH = 30;
 const DEFAULT_SNIPPET_MAX_CHARS = 360;
 const IPMA_WARNING_MAX_CHARS = 380;
-const DEDUP_TEXT_PREFIX_LENGTH = 140;
 
 const sourceCatalog = [
   { id: 'municipio', title: 'Município de Espinho', url: 'https://www.cm-espinho.pt/', publisher: 'Município de Espinho' },
@@ -186,7 +186,7 @@ function extractSnippetFromHtmlSource(source, html) {
         : null;
     }
     default: {
-      const text = stripHtml(html).slice(0, 320);
+      const text = pickRelevantText(blocks, ['espinho', 'aveiro']) ?? stripHtml(html).slice(0, 320);
       return text
         ? {
             topic: source.title,
@@ -255,7 +255,9 @@ async function collectSnippets() {
   const deduped = [];
   const seen = new Set();
   for (const snippet of snippets) {
-    const key = `${snippet.topic.toLowerCase()}|${snippet.text.toLowerCase().slice(0, DEDUP_TEXT_PREFIX_LENGTH)}`;
+    const key = createHash('sha256')
+      .update(`${snippet.topic}|${snippet.location}|${snippet.text}`.toLowerCase().trim())
+      .digest('hex');
     if (seen.has(key)) continue;
     seen.add(key);
     deduped.push(snippet);
@@ -267,7 +269,7 @@ async function collectSnippets() {
 function buildFallbackUpdate({ snippets, checkedSources }) {
   const now = new Date();
   const date = now.toISOString().slice(0, 10);
-  const updates = snippets.slice(0, 7).map((snippet) => ({
+  const updates = snippets.slice(0, MAX_UPDATES).map((snippet) => ({
     topic: snippet.topic,
     text: snippet.text,
     dateTime: now.toISOString(),
@@ -299,8 +301,8 @@ function buildFallbackUpdate({ snippets, checkedSources }) {
   };
 }
 
-function normalizeAiOutput(data, checkedSources) {
-  const fallback = buildFallbackUpdate({ snippets: [], checkedSources });
+function normalizeAiOutput(data, checkedSources, fallbackSnippets) {
+  const fallback = buildFallbackUpdate({ snippets: fallbackSnippets, checkedSources });
   if (!data || typeof data !== 'object') return fallback;
 
   const nowIso = new Date().toISOString();
@@ -308,7 +310,7 @@ function normalizeAiOutput(data, checkedSources) {
 
   const updates = Array.isArray(data.updates)
     ? data.updates
-        .slice(0, 7)
+        .slice(0, MAX_UPDATES)
         .map((update) => ({
           topic: String(update?.topic ?? '').slice(0, 120),
           text: String(update?.text ?? '').slice(0, 420),
@@ -401,7 +403,7 @@ async function generateUpdate() {
   if (llmEnabled) {
     try {
       const aiOutput = await generateWithOpenAI({ snippets: collected.snippets, checkedSources });
-      output = normalizeAiOutput(aiOutput, checkedSources);
+      output = normalizeAiOutput(aiOutput, checkedSources, collected.snippets);
     } catch {
       output = buildFallbackUpdate(collected);
     }
