@@ -43,7 +43,12 @@ const mockSnippets = [
 ];
 
 function stripHtml(html) {
-  return html.replace(/<script[\s\S]*?<\/script>/gi, ' ').replace(/<style[\s\S]*?<\/style>/gi, ' ').replace(/<[^>]+>/g, ' ').replace(/\s+/g, ' ').trim();
+  return html
+    .replace(/<script[\s\S]*?<\/script\s*>/gi, ' ')
+    .replace(/<style[\s\S]*?<\/style\s*>/gi, ' ')
+    .replace(/<[^>]+>/g, ' ')
+    .replace(/\s+/g, ' ')
+    .trim();
 }
 
 async function fetchWithTimeout(url, timeoutMs = 12000) {
@@ -190,7 +195,7 @@ function normalizeAiOutput(data, checkedSources) {
 async function generateWithOpenAI(input) {
   const prompt = `És um assistente editorial local para Espinho, Portugal.\n\nContexto e restrições:\n- Usar APENAS a informação fornecida em snippets de fontes públicas verificáveis.\n- Ignorar rumores, posts sem validação, spam promocional e notícias nacionais sem ligação clara a Espinho.\n- Deduplicar histórias repetidas.\n- Escrever em português (PT), tom adequado a grupo local de Facebook.\n- Texto conciso, com abertura amigável e pergunta final para engagement.\n- Citar links de fontes.\n- Evitar qualquer afirmação não suportada pelos snippets.\n\nIMPORTANTE DE CUSTO/PREVISIBILIDADE:\n- Priorizar uma saída curta e direta.\n- Se houver poucos dados relevantes, marcar noSignificantUpdates=true e explicar de forma responsável.\n\nResponder APENAS em JSON estrito com este schema:\n{\n  "date": "YYYY-MM-DD",\n  "generatedAt": "ISO_DATETIME",\n  "title": "string",\n  "facebookDraft": "string",\n  "updates": [\n    {\n      "topic": "string",\n      "text": "string",\n      "dateTime": "ISO_DATETIME",\n      "location": "string",\n      "sources": ["https://..."]\n    }\n  ],\n  "sources": [\n    {\n      "title": "string",\n      "url": "https://...",\n      "publisher": "string"\n    }\n  ],\n  "checkedSources": ["https://..."],\n  "noSignificantUpdates": true\n}\n\nInput JSON:\n${JSON.stringify(input)}`;
 
-  const response = await fetch('https://api.openai.com/v1/responses', {
+  const response = await fetch('https://api.openai.com/v1/chat/completions', {
     method: 'POST',
     headers: {
       Authorization: `Bearer ${OPENAI_API_KEY}`,
@@ -198,8 +203,9 @@ async function generateWithOpenAI(input) {
     },
     body: JSON.stringify({
       model: OPENAI_MODEL,
-      input: prompt,
-      max_output_tokens: 1200
+      messages: [{ role: 'user', content: prompt }],
+      max_tokens: 1200,
+      response_format: { type: 'json_object' }
     })
   });
 
@@ -208,8 +214,8 @@ async function generateWithOpenAI(input) {
   }
 
   const payload = await response.json();
-  const text = payload?.output_text;
-  if (!text) throw new Error('Missing output_text from OpenAI response');
+  const text = payload?.choices?.[0]?.message?.content;
+  if (!text) throw new Error('Missing completion content from OpenAI response');
   try {
     return JSON.parse(text);
   } catch {
