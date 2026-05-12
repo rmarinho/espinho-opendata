@@ -9,6 +9,7 @@ const ROOT = process.cwd();
 const MIN_TEXT_BLOCK_LENGTH = 30;
 const DEFAULT_SNIPPET_MAX_CHARS = 360;
 const IPMA_WARNING_MAX_CHARS = 380;
+const STALE_PAST_UPDATE_WINDOW_DAYS = 14;
 const RELEVANCE_KEYWORDS = ['espinho', 'aveiro'];
 const NOTICE_FOOTER_PREFIX = '⚠️ Rascunho gerado por IA para revisão (não publicação oficial).';
 const PORTUGUESE_MONTHS = ['jan', 'fev', 'mar', 'abr', 'mai', 'jun', 'jul', 'ago', 'set', 'out', 'nov', 'dez'];
@@ -48,6 +49,10 @@ export function htmlToBlocks(html) {
 
 function isHttpUrl(url) {
   return /^https?:\/\//.test(String(url));
+}
+
+function toIsoDate(date) {
+  return date.toISOString().slice(0, 10);
 }
 
 function isRelevantLocalText(text) {
@@ -366,21 +371,33 @@ function isValidIsoDateTime(value) {
   );
 }
 
-export function normalizeAiOutput(data, checkedSources, fallbackSnippets, catalog = sourceCatalog) {
-  const fallback = buildFallbackUpdate({ snippets: fallbackSnippets, checkedSources, catalog });
+function isStalePastUpdateDateTime(dateTime, now) {
+  const parsed = new Date(dateTime);
+  if (Number.isNaN(parsed.getTime())) return false;
+
+  const runDayStart = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate()));
+  const oldestAllowed = new Date(runDayStart);
+  oldestAllowed.setUTCDate(oldestAllowed.getUTCDate() - STALE_PAST_UPDATE_WINDOW_DAYS);
+
+  return parsed < oldestAllowed;
+}
+
+export function normalizeAiOutput(data, checkedSources, fallbackSnippets, catalog = sourceCatalog, now = new Date()) {
+  const fallback = buildFallbackUpdate({ snippets: fallbackSnippets, checkedSources, now, catalog });
   if (!data || typeof data !== 'object') return fallback;
 
-  const nowIso = new Date().toISOString();
-  const date = typeof data.date === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(data.date) ? data.date : nowIso.slice(0, 10);
-  const generatedAt = isValidIsoDateTime(data.generatedAt) ? data.generatedAt : nowIso;
+  const nowIso = now.toISOString();
+  const date = toIsoDate(now);
+  const generatedAt = nowIso;
 
   const allowedUrls = new Set([
     ...(Array.isArray(checkedSources) ? checkedSources.filter(isHttpUrl) : []),
     ...fallbackSnippets.filter((s) => s?.sourceUrl).map((s) => s.sourceUrl).filter(isHttpUrl)
   ]);
 
-  const updates = Array.isArray(data.updates)
-    ? data.updates
+  const candidateUpdates = Array.isArray(data.updates) ? data.updates.slice(0, MAX_UPDATES) : [];
+  const validSourcedUpdates = candidateUpdates.length
+    ? candidateUpdates
         .slice(0, MAX_UPDATES)
         .map((update) => ({
           topic: String(update?.topic ?? '').slice(0, 120),
@@ -393,6 +410,11 @@ export function normalizeAiOutput(data, checkedSources, fallbackSnippets, catalo
         }))
         .filter((update) => update.topic && update.text && update.sources.length > 0)
     : [];
+  const updates = validSourcedUpdates.filter((update) => !isStalePastUpdateDateTime(update.dateTime, now));
+
+  if (validSourcedUpdates.length !== updates.length || (candidateUpdates.length > 0 && updates.length === 0)) {
+    return fallback;
+  }
 
   const allSources = Array.isArray(data.sources)
     ? data.sources
@@ -469,6 +491,8 @@ export async function generateWithGitHubModels(input, { token, model, fetchFn = 
     method: 'POST',
     headers: {
       Authorization: `Bearer ${token}`,
+      Accept: 'application/vnd.github+json',
+      'X-GitHub-Api-Version': '2022-11-28',
       'Content-Type': 'application/json'
     },
     body: JSON.stringify({
@@ -524,9 +548,20 @@ export async function generateUpdate({
   collectSnippetsFn = collectSnippets,
   generateWithOpenAIFn = generateWithOpenAI,
   generateWithGitHubModelsFn = generateWithGitHubModels,
-  now = new Date()
+  now = new Date(),
+  logConfig = false
 } = {}) {
   const config = getRuntimeConfig(env);
+  if (logConfig) {
+    process.stdout.write(
+      [
+        `AI_PROVIDER=${config.aiProvider}`,
+        `USE_MOCK_DATA=${config.useMockData}`,
+        `GITHUB_MODELS_MODEL=${config.githubModelsModel}`,
+        `GITHUB_TOKEN_PRESENT=${config.githubToken ? 'true' : 'false'}`
+      ].join('\n') + '\n'
+    );
+  }
   const paths = buildDataPaths(rootDir);
   await mkdir(paths.archiveDir, { recursive: true });
 
@@ -552,7 +587,7 @@ export async function generateUpdate({
           model: config.githubModelsModel
         }
       );
-      output = normalizeAiOutput(aiOutput, checkedSources, snippets, catalog);
+      output = normalizeAiOutput(aiOutput, checkedSources, snippets, catalog, now);
     } catch {
       output = buildFallbackUpdate({ snippets, checkedSources, now, catalog });
     }
@@ -565,7 +600,7 @@ export async function generateUpdate({
           model: config.openAiModel
         }
       );
-      output = normalizeAiOutput(aiOutput, checkedSources, snippets, catalog);
+      output = normalizeAiOutput(aiOutput, checkedSources, snippets, catalog, now);
     } catch {
       output = buildFallbackUpdate({ snippets, checkedSources, now, catalog });
     }
@@ -596,7 +631,7 @@ export async function generateUpdate({
 
 export async function runCli() {
   try {
-    const output = await generateUpdate();
+    const output = await generateUpdate({ logConfig: true });
     process.stdout.write(`Generated update for ${output.date}\n`);
   } catch (error) {
     process.stderr.write(`Failed to generate update: ${error.message}\n`);

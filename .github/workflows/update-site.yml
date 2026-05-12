@@ -30,6 +30,9 @@ jobs:
       - name: Run automated tests
         run: npm test
 
+      - name: Capture run date
+        run: echo "EXPECTED_UPDATE_DATE=$(date -u +%F)" >> "$GITHUB_ENV"
+
       - name: Generate daily update JSON
         env:
           AI_PROVIDER: ${{ vars.AI_PROVIDER != '' && vars.AI_PROVIDER || 'github-models' }}
