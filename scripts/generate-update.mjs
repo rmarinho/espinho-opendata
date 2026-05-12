@@ -356,12 +356,26 @@ export function buildFallbackUpdate({ snippets, checkedSources, now = new Date()
   };
 }
 
+function isValidIsoDateTime(value) {
+  return (
+    typeof value === 'string' &&
+    /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(?:\.\d+)?(?:Z|[+-]\d{2}:\d{2})$/.test(value) &&
+    !Number.isNaN(Date.parse(value))
+  );
+}
+
 export function normalizeAiOutput(data, checkedSources, fallbackSnippets, catalog = sourceCatalog) {
   const fallback = buildFallbackUpdate({ snippets: fallbackSnippets, checkedSources, catalog });
   if (!data || typeof data !== 'object') return fallback;
 
   const nowIso = new Date().toISOString();
   const date = typeof data.date === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(data.date) ? data.date : nowIso.slice(0, 10);
+  const generatedAt = isValidIsoDateTime(data.generatedAt) ? data.generatedAt : nowIso;
+
+  const allowedUrls = new Set([
+    ...(Array.isArray(checkedSources) ? checkedSources.filter(isHttpUrl) : []),
+    ...fallbackSnippets.filter((s) => s?.sourceUrl).map((s) => s.sourceUrl).filter(isHttpUrl)
+  ]);
 
   const updates = Array.isArray(data.updates)
     ? data.updates
@@ -369,11 +383,13 @@ export function normalizeAiOutput(data, checkedSources, fallbackSnippets, catalo
         .map((update) => ({
           topic: String(update?.topic ?? '').slice(0, 120),
           text: String(update?.text ?? '').slice(0, 420),
-          dateTime: String(update?.dateTime ?? nowIso),
+          dateTime: isValidIsoDateTime(update?.dateTime) ? update.dateTime : nowIso,
           location: String(update?.location ?? 'Espinho').slice(0, 120),
-          sources: Array.isArray(update?.sources) ? update.sources.map(String).filter(isHttpUrl).slice(0, 4) : []
+          sources: Array.isArray(update?.sources)
+            ? update.sources.map(String).filter((url) => allowedUrls.has(url)).slice(0, 4)
+            : []
         }))
-        .filter((update) => update.topic && update.text)
+        .filter((update) => update.topic && update.text && update.sources.length > 0)
     : [];
 
   const allSources = Array.isArray(data.sources)
@@ -383,23 +399,21 @@ export function normalizeAiOutput(data, checkedSources, fallbackSnippets, catalo
           url: String(source?.url ?? ''),
           publisher: String(source?.publisher ?? '').slice(0, 120)
         }))
-        .filter((source) => isHttpUrl(source.url))
+        .filter((source) => allowedUrls.has(source.url))
     : [];
+
+  const noSignificantUpdates = updates.length === 0;
 
   const normalized = {
     date,
-    generatedAt: typeof data.generatedAt === 'string' ? data.generatedAt : nowIso,
+    generatedAt,
     title: typeof data.title === 'string' ? data.title.slice(0, 200) : fallback.title,
     facebookDraft: typeof data.facebookDraft === 'string' ? data.facebookDraft.slice(0, 1200) : fallback.facebookDraft,
     updates,
     sources: allSources,
     checkedSources: Array.isArray(checkedSources) ? checkedSources.filter(isHttpUrl) : [],
-    noSignificantUpdates: Boolean(data.noSignificantUpdates ?? updates.length === 0)
+    noSignificantUpdates
   };
-
-  if (!normalized.updates.length && !normalized.noSignificantUpdates) {
-    normalized.noSignificantUpdates = true;
-  }
 
   if (!normalized.sources.length) {
     normalized.sources = fallback.sources;
