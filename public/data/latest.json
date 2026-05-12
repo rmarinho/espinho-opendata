@@ -1,13 +1,13 @@
 {
   "date": "2026-05-12",
-  "generatedAt": "2026-05-12T18:56:48.779Z",
+  "generatedAt": "2026-05-12T18:58:15.424Z",
   "title": "Atualização diária de Espinho - 2026-05-12",
   "facebookDraft": "Boa noite, comunidade de Espinho! Segue um rascunho rápido com os principais pontos locais do dia, com fontes públicas para verificação. O que consideram mais relevante para acompanhar amanhã?",
   "updates": [
     {
       "topic": "Eventos Locais",
       "text": "A agenda do Visit Espinho destaca atividades culturais e comunitárias para os próximos dias.",
-      "dateTime": "2026-05-12T18:56:48.779Z",
+      "dateTime": "2026-05-12T18:58:15.424Z",
       "location": "Espinho",
       "sources": [
         "https://www.visit.espinho.pt/pt/eventos/"
@@ -16,7 +16,7 @@
     {
       "topic": "Condições Meteorológicas",
       "text": "Consulte os avisos públicos do IPMA para acompanhar alterações meteorológicas com impacto em Aveiro/Espinho.",
-      "dateTime": "2026-05-12T18:56:48.779Z",
+      "dateTime": "2026-05-12T18:58:15.424Z",
       "location": "Espinho",
       "sources": [
         "https://api.ipma.pt/open-data/forecast/warnings/warnings_www.json"
@@ -25,7 +25,7 @@
     {
       "topic": "Transportes",
       "text": "Antes de viajar, confirme avisos operacionais da CP para eventuais condicionamentos na circulação ferroviária.",
-      "dateTime": "2026-05-12T18:56:48.779Z",
+      "dateTime": "2026-05-12T18:58:15.424Z",
       "location": "Linha do Norte / Espinho",
       "sources": [
         "https://www.cp.pt/passageiros/pt/consultar-horarios/avisos"

@@ -11,6 +11,10 @@ const USE_MOCK_DATA = (process.env.USE_MOCK_DATA ?? 'true').toLowerCase() !== 'f
 const AI_PROVIDER = (process.env.AI_PROVIDER ?? 'openai').toLowerCase();
 const OPENAI_API_KEY = process.env.OPENAI_API_KEY;
 const OPENAI_MODEL = process.env.OPENAI_MODEL ?? 'gpt-4.1-mini';
+const MIN_TEXT_BLOCK_LENGTH = 30;
+const DEFAULT_SNIPPET_MAX_CHARS = 360;
+const IPMA_WARNING_MAX_CHARS = 380;
+const DEDUP_TEXT_PREFIX_LENGTH = 140;
 
 const sourceCatalog = [
   { id: 'municipio', title: 'Município de Espinho', url: 'https://www.cm-espinho.pt/', publisher: 'Município de Espinho' },
@@ -59,11 +63,11 @@ function htmlToBlocks(html) {
     .replace(/<[^>]+>/g, ' ')
     .split('\n')
     .map((line) => line.replace(/\s+/g, ' ').trim())
-    .filter((line) => line.length >= 30)
+    .filter((line) => line.length >= MIN_TEXT_BLOCK_LENGTH)
     .slice(0, 120);
 }
 
-function pickRelevantText(blocks, keywords, maxChars = 360) {
+function pickRelevantText(blocks, keywords, maxChars = DEFAULT_SNIPPET_MAX_CHARS) {
   if (!Array.isArray(blocks) || !blocks.length) return null;
 
   const lowerKeywords = keywords.map((key) => key.toLowerCase());
@@ -110,7 +114,7 @@ function parseIpmaRelevantWarnings(raw) {
 
       return {
         topic: 'IPMA - Aviso meteorológico relevante',
-        text: `${text}${level ? ` (nível ${level})` : ''}`.slice(0, 380),
+        text: `${text}${level ? ` (nível ${level})` : ''}`.slice(0, IPMA_WARNING_MAX_CHARS),
         dateTime: start && !Number.isNaN(Date.parse(start)) ? new Date(start).toISOString() : new Date().toISOString(),
         location: area || district || 'Espinho',
         sourceUrl: 'https://api.ipma.pt/open-data/forecast/warnings/warnings_www.json'
@@ -251,7 +255,7 @@ async function collectSnippets() {
   const deduped = [];
   const seen = new Set();
   for (const snippet of snippets) {
-    const key = `${snippet.topic.toLowerCase()}|${snippet.text.toLowerCase().slice(0, 140)}`;
+    const key = `${snippet.topic.toLowerCase()}|${snippet.text.toLowerCase().slice(0, DEDUP_TEXT_PREFIX_LENGTH)}`;
     if (seen.has(key)) continue;
     seen.add(key);
     deduped.push(snippet);

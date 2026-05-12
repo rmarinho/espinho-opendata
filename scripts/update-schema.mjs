@@ -3,7 +3,10 @@ export function validateUpdateSchema(data) {
 
   const isObject = (value) => value && typeof value === 'object' && !Array.isArray(value);
   const isIsoDate = (value) => typeof value === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(value);
-  const isIsoDateTimeLike = (value) => typeof value === 'string' && !Number.isNaN(Date.parse(value));
+  const isIsoDateTime = (value) =>
+    typeof value === 'string' &&
+    /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(?:\.\d+)?(?:Z|[+-]\d{2}:\d{2})$/.test(value) &&
+    !Number.isNaN(Date.parse(value));
   const isHttpUrl = (value) => typeof value === 'string' && /^https?:\/\//.test(value);
 
   if (!isObject(data)) {
@@ -17,7 +20,7 @@ export function validateUpdateSchema(data) {
   }
 
   if (!isIsoDate(data.date)) errors.push('date must match YYYY-MM-DD.');
-  if (!isIsoDateTimeLike(data.generatedAt)) errors.push('generatedAt must be a valid ISO datetime string.');
+  if (!isIsoDateTime(data.generatedAt)) errors.push('generatedAt must be a valid ISO datetime string.');
   if (typeof data.title !== 'string') errors.push('title must be a string.');
   if (typeof data.facebookDraft !== 'string') errors.push('facebookDraft must be a string.');
   if (typeof data.noSignificantUpdates !== 'boolean') errors.push('noSignificantUpdates must be a boolean.');
@@ -41,7 +44,7 @@ export function validateUpdateSchema(data) {
 
       if (typeof item.topic !== 'string') errors.push(`updates[${index}].topic must be a string.`);
       if (typeof item.text !== 'string') errors.push(`updates[${index}].text must be a string.`);
-      if (!isIsoDateTimeLike(item.dateTime)) errors.push(`updates[${index}].dateTime must be valid ISO datetime.`);
+      if (!isIsoDateTime(item.dateTime)) errors.push(`updates[${index}].dateTime must be valid ISO datetime.`);
       if (typeof item.location !== 'string') errors.push(`updates[${index}].location must be a string.`);
       if (!Array.isArray(item.sources)) {
         errors.push(`updates[${index}].sources must be an array.`);
