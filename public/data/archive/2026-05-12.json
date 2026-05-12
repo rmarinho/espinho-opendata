@@ -1,0 +1,62 @@
+{
+  "date": "2026-05-12",
+  "generatedAt": "2026-05-12T18:27:58.411Z",
+  "title": "Atualização diária de Espinho - 2026-05-12",
+  "facebookDraft": "Bom dia, comunidade de Espinho! Segue um rascunho rápido com os principais pontos do dia (fontes públicas no final). O que acham mais relevante hoje para a cidade?",
+  "updates": [
+    {
+      "topic": "Eventos Locais",
+      "text": "A agenda municipal destaca atividades culturais e familiares para os próximos dias em Espinho.",
+      "dateTime": "2026-05-12T18:27:58.411Z",
+      "location": "Espinho",
+      "sources": [
+        "https://www.cm-espinho.pt/pt/eventos/"
+      ]
+    },
+    {
+      "topic": "Condições Meteorológicas",
+      "text": "Os avisos públicos do IPMA devem ser consultados para acompanhar alterações no estado do tempo no litoral.",
+      "dateTime": "2026-05-12T18:27:58.411Z",
+      "location": "Espinho",
+      "sources": [
+        "https://api.ipma.pt/open-data/forecast/warnings/warnings_www.json"
+      ]
+    },
+    {
+      "topic": "Transportes",
+      "text": "Antes de viajar, confirme avisos operacionais da CP e da Infraestruturas de Portugal para eventuais condicionamentos.",
+      "dateTime": "2026-05-12T18:27:58.411Z",
+      "location": "Linha do Norte / Espinho",
+      "sources": [
+        "https://www.cp.pt/passageiros/pt/consultar-horarios/avisos"
+      ]
+    }
+  ],
+  "sources": [
+    {
+      "title": "Agenda de Espinho",
+      "url": "https://www.cm-espinho.pt/pt/eventos/",
+      "publisher": "Município de Espinho"
+    },
+    {
+      "title": "IPMA Avisos Meteorológicos",
+      "url": "https://api.ipma.pt/open-data/forecast/warnings/warnings_www.json",
+      "publisher": "IPMA"
+    },
+    {
+      "title": "CP - Comboios de Portugal",
+      "url": "https://www.cp.pt/passageiros/pt/consultar-horarios/avisos",
+      "publisher": "CP"
+    }
+  ],
+  "checkedSources": [
+    "https://www.cm-espinho.pt/",
+    "https://www.visitespinho.pt/",
+    "https://api.ipma.pt/open-data/forecast/warnings/warnings_www.json",
+    "https://www.cp.pt/passageiros/pt/consultar-horarios/avisos",
+    "https://www.infraestruturasdeportugal.pt/pt-pt/alertas",
+    "https://www.diariodeaveiro.pt/",
+    "https://www.cm-espinho.pt/pt/eventos/"
+  ],
+  "noSignificantUpdates": false
+}
