@@ -3,7 +3,7 @@ name: Update Espinho Updates Site
 on:
   workflow_dispatch:
   schedule:
-    - cron: "30 6 * * *"
+    - cron: "30 19 * * *"
 
 permissions:
   contents: write
@@ -31,8 +31,11 @@ jobs:
           AI_PROVIDER: ${{ vars.AI_PROVIDER }}
           OPENAI_MODEL: ${{ vars.OPENAI_MODEL }}
           OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
-          USE_MOCK_DATA: ${{ vars.USE_MOCK_DATA }}
+          USE_MOCK_DATA: ${{ vars.USE_MOCK_DATA || 'false' }}
         run: npm run generate:update
+
+      - name: Validate generated JSON schema
+        run: npm run validate:update
 
       - name: Commit generated data
         run: |

@@ -4,6 +4,7 @@
   "private": true,
   "description": "Static GitHub Pages site with daily Espinho local updates",
   "scripts": {
-    "generate:update": "node scripts/generate-update.mjs"
+    "generate:update": "node scripts/generate-update.mjs",
+    "validate:update": "node scripts/validate-generated-json.mjs"
   }
 }
