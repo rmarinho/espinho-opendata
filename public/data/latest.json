@@ -1,52 +1,51 @@
 {
   "date": "2026-05-12",
-  "generatedAt": "2026-05-12T19:41:23.902Z",
+  "generatedAt": "2026-05-12T23:30:56.101Z",
   "title": "Atualização diária de Espinho - 2026-05-12",
-  "facebookDraft": "Boa noite, comunidade de Espinho! Segue um rascunho rápido com os principais pontos locais do dia, com fontes públicas para verificação. O que consideram mais relevante para acompanhar amanhã?\n\n⚠️ Rascunho gerado por IA para revisão (não publicação oficial). Fontes: Visit Espinho - Eventos; IPMA Avisos Meteorológicos; CP - Comboios de Portugal.",
+  "facebookDraft": "Boa noite, comunidade de Espinho! Segue um rascunho rápido com os principais pontos locais do dia, com fontes públicas para verificação. O que consideram mais relevante para acompanhar amanhã?\n\n⚠️ Rascunho gerado por IA para revisão (não publicação oficial). Fontes: Diário de Aveiro - Espinho.",
   "updates": [
     {
-      "topic": "Eventos Locais",
-      "text": "A agenda do Visit Espinho destaca atividades culturais e comunitárias para os próximos dias.",
-      "dateTime": "2026-05-12T19:41:23.902Z",
+      "topic": "Notícia local (Diário de Aveiro)",
+      "text": "Região de Espinho | Diário de Aveiro",
+      "dateTime": "2026-05-12T23:30:56.101Z",
       "location": "Espinho",
       "sources": [
-        "https://www.visit.espinho.pt/pt/eventos/"
+        "https://www.diarioaveiro.pt/regiao/espinho/"
       ]
     },
     {
-      "topic": "Condições Meteorológicas",
-      "text": "Consulte os avisos públicos do IPMA para acompanhar alterações meteorológicas com impacto em Aveiro/Espinho.",
-      "dateTime": "2026-05-12T19:41:23.902Z",
+      "topic": "Notícia local (Diário de Aveiro)",
+      "text": "Acompanhe as últimas notícias e eventos de Espinho.. Data: Atualidade Exclusivo RE3 marca o presente da regi&atilde;o e j&aacute; abra&cced",
+      "dateTime": "2026-05-12T23:30:56.101Z",
       "location": "Espinho",
       "sources": [
-        "https://api.ipma.pt/open-data/forecast/warnings/warnings_www.json"
+        "https://www.diarioaveiro.pt/regiao/espinho/"
       ]
     },
     {
-      "topic": "Transportes",
-      "text": "Antes de viajar, confirme avisos operacionais da CP para eventuais condicionamentos na circulação ferroviária.",
-      "dateTime": "2026-05-12T19:41:23.902Z",
-      "location": "Linha do Norte / Espinho",
+      "topic": "Notícia local (Diário de Aveiro)",
+      "text": "Atualidade Sociedade PSD de Espinho v&ecirc; cancelada elei&ccedil;&atilde;o do l&iacute;der e atribui-o a desagrado de Montenegro. Data: Desporto Exclusivo Miguel Maia deixa comando t&eacute;cnico da Ac. Espinho",
+      "dateTime": "2026-05-12T23:30:56.101Z",
+      "location": "Espinho",
       "sources": [
-        "https://www.cp.pt/passageiros/pt/consultar-horarios/avisos"
+        "https://www.diarioaveiro.pt/regiao/espinho/"
+      ]
+    },
+    {
+      "topic": "Notícia local (Diário de Aveiro)",
+      "text": "Desporto Exclusivo Miguel Maia deixa comando t&eacute;cnico da Ac. Espinho",
+      "dateTime": "2026-05-12T23:30:56.101Z",
+      "location": "Espinho",
+      "sources": [
+        "https://www.diarioaveiro.pt/regiao/espinho/"
       ]
     }
   ],
   "sources": [
     {
-      "title": "Visit Espinho - Eventos",
-      "url": "https://www.visit.espinho.pt/pt/eventos/",
-      "publisher": "Turismo de Espinho"
-    },
-    {
-      "title": "IPMA Avisos Meteorológicos",
-      "url": "https://api.ipma.pt/open-data/forecast/warnings/warnings_www.json",
-      "publisher": "IPMA"
-    },
-    {
-      "title": "CP - Comboios de Portugal",
-      "url": "https://www.cp.pt/passageiros/pt/consultar-horarios/avisos",
-      "publisher": "CP"
+      "title": "Diário de Aveiro - Espinho",
+      "url": "https://www.diarioaveiro.pt/regiao/espinho/",
+      "publisher": "Diário de Aveiro"
     }
   ],
   "checkedSources": [
