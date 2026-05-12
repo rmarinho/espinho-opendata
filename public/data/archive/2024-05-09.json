@@ -1,12 +1,12 @@
 {
   "date": "2024-05-09",
   "generatedAt": "2024-05-09T12:00:00Z",
-  "title": "Festival de Marionetas e novidades locais em Espinho",
-  "facebookDraft": "Olá Espinho! O Festival Internacional de Marionetas está de volta de 15 a 31 de maio com várias sessões para toda a família. Além disso, nos dias 7 e 8 de maio, o Centro Multimeios acolheu um importante debate sobre o futuro da enfermagem na urgência. No desporto, Miguel Maia deixou o comando técnico da Associação de Espinho. Quem já marcou presença nos eventos ou acompanha o desporto local? Partilhem connosco! 🌟🎭⚽\n\nFonte: https://www.cm-espinho.pt/ e https://www.diarioaveiro.pt/regiao/espinho/\n\n⚠️ Rascunho gerado por IA para revisão (não publicação oficial). Fontes: Município de Espinho; Diário de Aveiro - Espinho; Visit Espinho - Eventos; IPMA Avisos Meteorológicos.",
+  "title": "Espinho com Cultura, Ciência e Mudanças no Desporto",
+  "facebookDraft": "Boas notícias de Espinho! 🎭 O Festival Internacional de Marionetas já tem data: de 15 a 31 de maio, com um programa que promete encantar. Além disso, nos dias 7 e 8, o Centro Multimeios foi palco de um debate importante sobre o futuro da enfermagem na urgência. No desporto local, Miguel Maia anunciou que deixa o comando técnico da Ac. Espinho. Como vêem estas novidades para a nossa cidade? Partilhem a vossa opinião! #Espinho\n\n⚠️ Rascunho gerado por IA para revisão (não publicação oficial). Fontes: Município de Espinho; Diário de Aveiro - Espinho; Visit Espinho - Eventos; IPMA Avisos Meteorológicos.",
   "updates": [
     {
       "topic": "Festival Internacional de Marionetas de Espinho",
-      "text": "O Festival Internacional de Marionetas de Espinho realiza-se de 15 a 31 maio, prometendo animação cultural para todas as idades. Consulte o programa completo e não perca!",
+      "text": "O Festival Internacional de Marionetas de Espinho regressa entre 15 e 31 de maio, com um programa completo disponível para consulta, prometendo animar a cidade durante estas semanas.",
       "dateTime": "2024-05-09T00:00:00Z",
       "location": "Espinho",
       "sources": [
@@ -14,17 +14,17 @@
       ]
     },
     {
-      "topic": "Debate sobre o futuro da enfermagem na urgência",
-      "text": "Nos dias 7 e 8 de maio, o Centro Multimeios recebeu um debate científico sobre os desafios e futuro da enfermagem na urgência, reforçando o papel da saúde na região.",
-      "dateTime": "2024-05-07T00:00:00Z",
+      "topic": "Debate sobre Enfermagem na Urgência",
+      "text": "Nos dias 7 e 8 de maio, o Centro Multimeios de Espinho foi o palco de um importante debate científico sobre o futuro da enfermagem na urgência, reunindo profissionais e especialistas locais.",
+      "dateTime": "2024-05-08T00:00:00Z",
       "location": "Espinho",
       "sources": [
         "https://www.cm-espinho.pt/"
       ]
     },
     {
-      "topic": "Mudança técnica no desporto local",
-      "text": "Miguel Maia decidiu deixar o comando técnico da Associação de Espinho, marcando uma mudança importante no futebol local.",
+      "topic": "Mudança no comando técnico da Ac. Espinho",
+      "text": "Miguel Maia anunciou que deixa o comando técnico da Associação Académica de Espinho, uma notícia que marca o desporto local e abre espaço para novidades na equipa.",
       "dateTime": "2024-05-09T00:00:00Z",
       "location": "Espinho",
       "sources": [
@@ -34,12 +34,12 @@
   ],
   "sources": [
     {
-      "title": "Município de Espinho - Festival e Debate",
+      "title": "Município de Espinho - Festival Internacional de Marionetas e Debate",
       "url": "https://www.cm-espinho.pt/",
-      "publisher": "Município de Espinho"
+      "publisher": "Câmara Municipal de Espinho"
     },
     {
-      "title": "Notícias locais de Espinho",
+      "title": "Notícias de Espinho - Desporto e Atualidades",
       "url": "https://www.diarioaveiro.pt/regiao/espinho/",
       "publisher": "Diário de Aveiro"
     }
