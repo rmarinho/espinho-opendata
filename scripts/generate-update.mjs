@@ -40,6 +40,7 @@ export function htmlToBlocks(html) {
     .split('\n')
     .map((line) => line.replace(/\s+/g, ' ').trim())
     .filter((line) => line.length >= MIN_TEXT_BLOCK_LENGTH)
+    // Visit/Diário pages often include many interleaved cards; keeping a wider window improves event/article capture.
     .slice(0, 220);
 }
 
@@ -70,6 +71,7 @@ export function pickRelevantText(blocks, keywords, maxChars = DEFAULT_SNIPPET_MA
   for (const line of candidates) {
     if ((text + ' ' + line).trim().length > maxChars) break;
     text = `${text} ${line}`.trim();
+    // Aim for richer snippets while still concise enough for the daily summary payload.
     if (text.length >= maxChars * 0.75) break;
   }
 
@@ -141,7 +143,7 @@ export function extractVisitEspinhoEventSnippets(html, source) {
   for (let index = 0; index < blocks.length; index += 1) {
     const line = blocks[index];
     const lower = line.toLowerCase();
-    const isEventLike = /evento|agenda|festival|concerto|espetáculo|exposiç|workshop|feira/.test(lower);
+    const isEventLike = /evento|agenda|festival|concerto|espetáculo|exposi[çc][ãa]o|workshop|feira/.test(lower);
     const titleLike = line.length >= 18 && line.length <= 150;
     if (!isEventLike || !titleLike) continue;
 
