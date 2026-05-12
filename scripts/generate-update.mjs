@@ -13,6 +13,7 @@ const STALE_PAST_UPDATE_WINDOW_DAYS = 14;
 const RELEVANCE_KEYWORDS = ['espinho', 'aveiro'];
 const NOTICE_FOOTER_PREFIX = '⚠️ Rascunho gerado por IA para revisão (não publicação oficial).';
 const PORTUGUESE_MONTHS = ['jan', 'fev', 'mar', 'abr', 'mai', 'jun', 'jul', 'ago', 'set', 'out', 'nov', 'dez'];
+const ERROR_BODY_MAX_CHARS = 500;
 
 export function getRuntimeConfig(env = process.env) {
   return {
@@ -504,7 +505,15 @@ export async function generateWithGitHubModels(input, { token, model, fetchFn = 
   });
 
   if (!response.ok) {
-    throw new Error(`GitHub Models request failed with ${response.status}`);
+    let errorBody = '';
+    try {
+      errorBody = await response.text();
+    } catch {
+      errorBody = '';
+    }
+
+    const detail = errorBody ? `: ${errorBody.replace(/\s+/g, ' ').slice(0, ERROR_BODY_MAX_CHARS)}` : '';
+    throw new Error(`GitHub Models request failed with ${response.status}${detail}`);
   }
 
   const payload = await response.json();
@@ -575,10 +584,15 @@ export async function generateUpdate({
   const snippets = Array.isArray(collected.snippets) ? collected.snippets : [];
 
   let output;
-  const githubModelsEnabled = config.aiProvider === 'github-models' && config.githubToken;
-  const openAiEnabled = config.aiProvider === 'openai' && config.openAiApiKey;
+  const githubModelsSelected = config.aiProvider === 'github-models';
+  const openAiSelected = config.aiProvider === 'openai';
+  const openAiEnabled = openAiSelected && config.openAiApiKey;
 
-  if (githubModelsEnabled) {
+  if (githubModelsSelected) {
+    if (!config.githubToken) {
+      throw new Error('AI_PROVIDER=github-models requires GITHUB_TOKEN or GH_MODELS_TOKEN.');
+    }
+
     try {
       const aiOutput = await generateWithGitHubModelsFn(
         { snippets, checkedSources },
@@ -588,8 +602,8 @@ export async function generateUpdate({
         }
       );
       output = normalizeAiOutput(aiOutput, checkedSources, snippets, catalog, now);
-    } catch {
-      output = buildFallbackUpdate({ snippets, checkedSources, now, catalog });
+    } catch (error) {
+      throw new Error(`GitHub Models generation failed; refusing to publish fallback source snippets. ${error.message}`);
     }
   } else if (openAiEnabled) {
     try {

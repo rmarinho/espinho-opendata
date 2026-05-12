@@ -334,39 +334,64 @@ test('generateWithGitHubModels parses JSON output correctly', async () => {
 });
 
 test('generateWithGitHubModels throws on API failure', async () => {
-  const fakeFetch = async () => ({ ok: false, status: 500 });
+  const fakeFetch = async () => ({
+    ok: false,
+    status: 403,
+    text: async () => JSON.stringify({ message: 'models access denied' })
+  });
 
   await assert.rejects(
     () => generateWithGitHubModels({ snippets: [], checkedSources: [] }, { token: 'tok', model: 'm', fetchFn: fakeFetch }),
-    { message: /GitHub Models request failed with 500/ }
+    { message: /GitHub Models request failed with 403.*models access denied/ }
   );
 });
 
-test('generateUpdate falls back safely when GitHub Models API fails', async () => {
-  const rootDir = await mkdtemp(path.join(os.tmpdir(), 'espinho-ghmodels-fallback-'));
+test('generateUpdate refuses to publish fallback when GitHub Models API fails', async () => {
+  const rootDir = await mkdtemp(path.join(os.tmpdir(), 'espinho-ghmodels-fail-fast-'));
 
   const failingGitHubModelsFn = async () => {
     throw new Error('API down');
   };
 
-  const output = await generateUpdate({
-    rootDir,
-    env: {
-      USE_MOCK_DATA: 'false',
-      AI_PROVIDER: 'github-models',
-      GITHUB_TOKEN: 'test-token'
-    },
-    collectSnippetsFn: async () => ({
-      snippets: [{ topic: 'Evento', text: 'Feira local.', location: 'Espinho', sourceUrl: SOURCE_URL }],
-      checkedSources: [SOURCE_URL]
-    }),
-    generateWithGitHubModelsFn: failingGitHubModelsFn,
-    now: new Date('2026-05-12T20:00:00.000Z')
-  });
+  await assert.rejects(
+    () =>
+      generateUpdate({
+        rootDir,
+        env: {
+          USE_MOCK_DATA: 'false',
+          AI_PROVIDER: 'github-models',
+          GITHUB_TOKEN: 'test-token'
+        },
+        collectSnippetsFn: async () => ({
+          snippets: [{ topic: 'Evento', text: 'Feira local.', location: 'Espinho', sourceUrl: SOURCE_URL }],
+          checkedSources: [SOURCE_URL]
+        }),
+        generateWithGitHubModelsFn: failingGitHubModelsFn,
+        now: new Date('2026-05-12T20:00:00.000Z')
+      }),
+    /GitHub Models generation failed; refusing to publish fallback source snippets. API down/
+  );
+});
 
-  assert.equal(output.updates.length, 1);
-  assert.equal(output.noSignificantUpdates, false);
-  assert.match(output.facebookDraft, /Rascunho gerado por IA/);
+test('generateUpdate requires a token when GitHub Models is selected', async () => {
+  const rootDir = await mkdtemp(path.join(os.tmpdir(), 'espinho-ghmodels-token-'));
+
+  await assert.rejects(
+    () =>
+      generateUpdate({
+        rootDir,
+        env: {
+          USE_MOCK_DATA: 'false',
+          AI_PROVIDER: 'github-models'
+        },
+        collectSnippetsFn: async () => ({
+          snippets: [{ topic: 'Evento', text: 'Feira local.', location: 'Espinho', sourceUrl: SOURCE_URL }],
+          checkedSources: [SOURCE_URL]
+        }),
+        now: new Date('2026-05-12T20:00:00.000Z')
+      }),
+    /AI_PROVIDER=github-models requires GITHUB_TOKEN or GH_MODELS_TOKEN/
+  );
 });
 
 test('generateUpdate writes archive using normalized run date, not LLM root date', async () => {
