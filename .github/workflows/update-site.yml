@@ -26,6 +26,9 @@ jobs:
         with:
           node-version: "20"
 
+      - name: Run automated tests
+        run: npm test
+
       - name: Generate daily update JSON
         env:
           AI_PROVIDER: ${{ vars.AI_PROVIDER }}
